@@ -30,22 +30,72 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      const productsInStorage = await AsyncStorage.getItem(
+        '@GoMarketplace:products',
+      );
+
+      if (productsInStorage) {
+        setProducts(JSON.parse(productsInStorage));
+      }
     }
 
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
+  useEffect(() => {
+    if (products.length === 0) return;
+
+    async function saveStorage(): Promise<void> {
+      await AsyncStorage.setItem(
+        '@GoMarketplace:products',
+        JSON.stringify(products),
+      );
+    }
+
+    // console.info(JSON.stringify({ state: products }, null, 2));
+    saveStorage();
+  }, [products]);
+
+  const addToCart = useCallback(product => {
+    setProducts(state => {
+      const findProduct = state.find(el => el.id === product.id);
+
+      if (findProduct !== undefined) return state;
+
+      return [...state, { ...product, quantity: 1 }];
+    });
   }, []);
 
-  const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
+  const increment = useCallback(id => {
+    setProducts(state =>
+      state.map(product => {
+        if (product.id !== id) return product;
+
+        return {
+          ...product,
+          quantity: product.quantity + 1,
+        };
+      }),
+    );
   }, []);
 
-  const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
+  const decrement = useCallback(id => {
+    setProducts(state => {
+      const findProduct = state.find(el => el.id === id);
+
+      if (findProduct === undefined) return state;
+      if (findProduct.quantity - 1 <= 0) return state;
+
+      return state.map(product => {
+        if (product.id !== id) return product;
+        // if (product.quantity - 1 <= 0) return product;
+
+        return {
+          ...product,
+          quantity: product.quantity - 1,
+        };
+      });
+    });
   }, []);
 
   const value = React.useMemo(
